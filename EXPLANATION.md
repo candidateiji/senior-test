@@ -1,3 +1,237 @@
+# Commit 3: implementing the first use-case
+
+First things first, I need to implement the `getSponsorByName` use-case in the `Sponsors` bounded
+context
+
+## [Hexagonal architecture](https://www.youtube.com/watch?v=th4AgBcrEHA)
+
+I'm using a hexagonal architecture, which means that I'm separating the business logic from the
+infrastructure code
+
+It makes it very easy to create acceptance tests and integration tests
+
+- acceptance tests for the business logic
+- integration tests for the infrastructure code (driven & driver adapters)
+
+## [Vertical slicing architecture](https://www.youtube.com/watch?v=L2Wnq0ChAIA)
+
+I'm using a vertical slicing architecture, which means that I'm grouping the code by feature instead
+of by layer
+
+I don't create a `controllers` folder for example, I create a `getSponsorByName` folder and put all
+the code related to this use-case in it
+
+This way, no need to switch between folders when working on a feature
+
+It is a bit controversial, but I've found it to be very useful in my experience
+
+## Dependency injection
+
+I'm using [pure DI](https://blog.ploeh.dk/2014/06/10/pure-di/) to inject the dependencies to my
+use-cases, which means that I'm not using a DI container
+
+I know I could have used the `Reader` monad, but I didn't know how to use it with fp-ts and I quite
+like the simplicity of pure DI
+
+```typescript
+import { handlers } from "@inato/modules-sponsors";
+
+import { handler as rawHandler } from "./getOngoingTrialsBySponsor.handler";
+
+const handler = rawHandler({
+  // Injecting a dependency to a use-case handler
+  getSponsorByName: handlers.getSponsorByName,
+});
+```
+
+## Architecture overview
+
+```
+sponsors
+├── domain // Business logic that can be shared between use-cases
+│   └── sponsor // Name of the entity/aggregate
+│       ├── errors
+│       │   └── unknownSponsor.ts
+│       ├── gateways // Interfaces for the driven ports
+│       │   └── getAllSponsors.ts
+│       └── type
+│           ├── index.ts    // Entity/aggregate definition
+│           └── name.ts     // Value object definition
+├── gateways // Driven ports
+│   └── getAllSponsors
+│       ├── getAllSponsors.itest.ts // Integration test (from port to external service)
+│       └── index.ts
+└── useCases // Usage scenarios for the bounded context
+    └── getSponsorByName // Name of the use-case
+        ├── getSponsorByName.fixture.ts // Fixtures for the acceptance tests
+        ├── getSponsorByName.handler.ts // Code of the use-case
+        ├── getSponsorByName.http.ts    // HTTP adapter for the use-case
+        ├── getSponsorByName.test.ts    // Acceptance tests
+        └── index.ts                    // Composition root
+```
+
+I know that in software architecture,
+[autonomy is more important than consistency](https://amzn.to/41UsEGw), but to make the code easier
+to understand for the reviewers, I've used the same architecture in each module
+
+## Branded types
+
+I'm using [branded types](https://medium.com/@gcanti/branded-types-in-typescript-d9b65634b6b6) to
+prevent mixing up values that are semantically different
+
+```typescript
+import * as z from "zod";
+import { SPONSOR_NAME_SCHEMA } from "@inato/modules-sponsors";
+
+// This is a raw type
+const SPONSOR_NAME_RAW_SCHEMA = z.string().min(1).max(255);
+// This is a branded type
+const SPONSOR_NAME_SCHEMA = SPONSOR_NAME_RAW_SCHEMA.brand("SponsorName");
+
+type SponsorNameRaw = z.infer<typeof SPONSOR_NAME_RAW_SCHEMA>;
+type SponsorName = z.infer<typeof SPONSOR_NAME_SCHEMA>;
+
+const fnWithoutBrandedType = (sponsorName: SponsorNameRaw) => {
+  // ...
+};
+
+// Compiles even though the name of a sponsor can't be empty
+fnWithoutBrandedType("");
+
+const fnWithBrandedType = (sponsorName: SponsorName) => {
+  // ...
+};
+
+// Doesn't compile as the string is not a `SponsorName`
+fnWithBrandedType("");
+
+const validString = SPONSOR_NAME_SCHEMA.parse("Sponsor name");
+
+// This compiles as `validString` is a `SponsorName`, not just a `string`
+fnWithBrandedType(validString);
+```
+
+## Use-case architecture overview
+
+```ts
+// The dependencies of the use-case
+type Deps = {
+  getRemoveData: GetRemoveData;
+};
+
+// The schema to validate the input
+const schema = z.object({
+  sponsorName: SPONSOR_NAME_RAW_SCHEMA,
+});
+
+// The input required by the use-case
+type Input = z.infer<typeof schema>;
+
+// The possible failures of the use-case
+type Failure = InternalError | InvalidParameterError | UnknownSponsorError;
+
+// The output of the use-case
+type Output = TE.TaskEither<Failure, ReadonlyArray<Trial>>;
+
+// The type signature of the function, I declare it outside the function as in Haskell
+type UseCaseName = (deps: Deps) => (input: Input) => Output;
+
+const handler: UseCaseName = (deps) => (input) => {
+  // ...
+};
+```
+
+## Test architecture
+
+I believe one of the most important things in software development is to write tests so easy to read
+that even you product owner can understand them, so you can work on them with him or her
+
+Here is the standard structure I use when I write tests:
+
+```typescript
+feature("Description of the feature", () => {
+  rule("A rule to respect in the feature", () => {
+    success(
+      `
+        Given the initial state of your system
+        When the user does something
+        Then the result is a success
+      `,
+      async ({ then, when }) => {
+        given.initialState();
+        when.userDoes("something");
+        await then.resultIsSuccess("Description of the success");
+      }
+    );
+
+    failure(
+      `
+        Given the initial state of your system
+        When the user does something
+        Then the result is a failure
+      `,
+      async ({ then, when }) => {
+        given.initialState();
+        when.userDoes("something");
+        await then.resultIsFailure(new Failure("Description of the failure"));
+      }
+    );
+  });
+});
+```
+
+I'm using an [object mother](https://martinfowler.com/bliki/ObjectMother.html) to create my fixtures
+to make my code very easy to write and read
+
+Here is an example from my codebase
+
+```typescript
+import { InvalidParameterError, stringOfLength } from "@inato/infra-common";
+import {
+  beforeEach,
+  describe as feature,
+  describe as rule,
+  test as failure,
+  test as success,
+} from "vitest";
+
+import { UnknownSponsorError } from "../../domain/sponsor";
+import type { Context } from "./getSponsorByName.fixture";
+import { given, reset, then, when } from "./getSponsorByName.fixture";
+
+feature("getSponsorByName", () => {
+  rule("A sponsor matching the given name is returned", () => {
+    success(
+      `
+        Given 'Sponsor1' and 'Sponsor2' exist
+        When the input is 'Sponsor1'
+        Then 'Sponsor1' is returned
+      `,
+      async ({ given, then, when }) => {
+        given.sponsorsExist(["Sponsor1", "Sponsor2"]);
+        when.inputIs({ name: "Sponsor1" });
+        await then.resultIsSuccess("Sponsor1");
+      }
+    );
+
+    failure(
+      `
+        Given 'Sponsor1' and 'Sponsor2' exist
+        When the input is 'Sponsor3'
+        Then the result is a UnknownSponsorError
+      `,
+      async ({ given, then, when }) => {
+        given.sponsorsExist(["Sponsor1", "Sponsor2"]);
+        when.inputIs({ name: "Sponsor3" });
+        await then.resultIsFailure(new UnknownSponsorError("Sponsor3"));
+      }
+    );
+  });
+});
+```
+
+---
+
 # Commit 2: Analyzing the problem space
 
 There are two bounded contexts, Sponsors and Trials
