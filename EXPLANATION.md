@@ -1,3 +1,16 @@
+# Commit 4: implementing `getOngoingTrialsBySponsor` use-case
+
+Now that I can check if a sponsor exists, I can implement the `getOngoingTrialsBySponsor` use-case
+
+I've split the feature into two use-cases:
+
+- `getOngoingTrialsBySponsor`
+- `getOngoingTrials` that will be used by the second use-case `getOngoingTrialsByCountry`
+
+I've created an HTTP adapter for `getOngoingTrialsBySponsor`
+
+---
+
 # Commit 3: implementing the first use-case
 
 First things first, I need to implement the `getSponsorByName` use-case in the `Sponsors` bounded
