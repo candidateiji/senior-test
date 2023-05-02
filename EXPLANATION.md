@@ -1,3 +1,10 @@
+# Commit 6: implementing the second use-case `getOngoingTrialsByCountry`
+
+This will use the already existing `getOngoingTrials` use-case and won't expose an HTTP route but a
+console definition instead
+
+---
+
 # Commit 5: creating the `http` app
 
 I've a simple `fastify` app that will accept routes by the different modules to create a full server
