@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "@inato/modules-trials": "*"
+  },
+  "main": "dist/index.js",
+  "name": "@inato/apps-http",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "start": "ts-node src/index.ts"
+  },
+  "version": "0.0.0"
+}

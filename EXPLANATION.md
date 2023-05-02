@@ -1,3 +1,85 @@
+# Commit 2: Analyzing the problem space
+
+There are two bounded contexts, Sponsors and Trials
+
+We also require a way to validate if a Country is valid, as it's not a bounded context on its own,
+I've set the code in a shared kernel
+
+Here a diagram of the domain model:
+
+```
++-----------------+      +-----------------+
+|  Sponsors       |<-----+  Trials         |
+|                 |      |                 |
++-----------------+      +-------+---------+
+                                 |
+                                 |
+                                 |
+                                 |
+                                 v
+                         +-------+---------+
+                         |  Shared Kernel  |
+                         |                 |
+                         +-----------------+
+```
+
+This lead me to the following directory structure:
+
+```
+src
+├── apps
+│   ├── http
+│   └── trials
+├── infra
+│   ├── common
+│   ├── console
+│   └── http
+└── modules
+    ├── common
+    ├── sponsors
+    └── trials
+```
+
+- `apps` contains the entry points for the different applications -- `http` is the app that
+  retrieves the different routes exposed by the `modules` to build a REST API -- `trials` is the app
+  that runs the CLI for the customer success team
+- `infra` contains the code that is specific to the infrastructure (code that can be shared between
+  the apps and the modules) -- `common` contains code that is technology-agnostic -- `console`
+  contains code that is specific to the console apps (CLI) -- `http` contains code that is specific
+  to the REST APIs
+- `modules` contains the code for the different bounded contexts -- `common` is the shared kernel --
+  `sponsors` is the bounded context for the sponsors -- `trials` is the bounded context for the
+  trials
+
+## Monorepo
+
+As the goal is to build the first parts of a larger-scale software, I've decided to use a monorepo
+
+## [Modular monolith](https://www.youtube.com/watch?v=5OjqD-ow8GE)
+
+As each component is a different npm package, you can easily work on your projects without impacting
+the other ones
+
+For example, if there is bug in `@inato/modules-trials@1.1.0`, I can easily revert the prod version
+to `1.0.0` without having to deploy `@inato/modules-sponsors` again
+
+I actually haven't had time to implement the ACLs between the different modules, thus the modules
+are less modular than I would have liked
+
+Here is what using a use case from the `sponsors` bounded context in the `trials` bounded context
+looks like:
+
+```typescript
+import { handlers } from "@inato/modules-sponsors";
+
+const getSponsorByName = handlers.getSponsorByName;
+```
+
+Which leads to a huge coupling between the two modules, leaking the ubiquitous language from one
+bounded context to the other one.
+
+---
+
 # Before I forget
 
 The `README.md` file is outdated in the repository as the example for the first step is incorrect in

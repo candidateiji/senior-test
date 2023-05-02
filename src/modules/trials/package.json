@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@inato/infra-common": "*",
+    "@inato/infra-http": "*",
+    "@inato/modules-common": "*",
+    "@inato/modules-sponsors": "*"
+  },
+  "main": "dist/index.js",
+  "name": "@inato/modules-trials",
+  "scripts": {
+    "build": "tsc --project tsconfig.json"
+  },
+  "version": "0.0.0"
+}

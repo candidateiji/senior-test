@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@inato/modules-trials": "*",
+    "fp-ts": "2.14.0"
+  },
+  "main": "dist/index.js",
+  "name": "@inato/apps-trials",
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "start": "ts-node src/index.ts"
+  },
+  "version": "0.0.0"
+}

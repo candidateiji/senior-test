@@ -4,7 +4,7 @@ As a product engineer in the team, you suggested to build an internal tool for o
 
 ## Step 1: Web API
 
-We first need to be able to query the list of ongoing clinical trials for a given sponsor. We already have access to a third-party API (represented by [this file](trials.json)) listing all clinical trials, and we are going to build a wrapper around it.
+We first need to be able to query the list of ongoing clinical trials for a given sponsor. We already have access to a third-party API (represented by [this file](src/infra/common/src/data/trials.json)) listing all clinical trials, and we are going to build a wrapper around it.
 
 A trial is _ongoing_ if:
 
@@ -35,7 +35,7 @@ Example stack: http server exposing REST endpoint that serves json payloads. Fee
 
 ## Step 2: Command-line interface
 
-We will then build a command-line interface that displays the list of ongoing clinical trials for a given country code. It will be deployed on the computers of the customer success team. We already have access to a [file](countries.json) that maps country codes to country names. We will leverage what we have already built in the previous step.
+We will then build a command-line interface that displays the list of ongoing clinical trials for a given country code. It will be deployed on the computers of the customer success team. We already have access to a [file](src/infra/common/src/data/countries.json) that maps country codes to country names. We will leverage what we have already built in the previous step.
 
 Here is the output you should get for the country code "FR":
 

@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@inato/infra-common": "*"
+  },
+  "main": "dist/index.js",
+  "name": "@inato/modules-common",
+  "scripts": {
+    "build": "tsc --project tsconfig.json"
+  },
+  "version": "0.0.0"
+}
