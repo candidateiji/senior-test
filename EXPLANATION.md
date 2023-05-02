@@ -1,3 +1,10 @@
+# Commit 7: creating the `trials` console app
+
+This one isn't a composition from different modules, it is designed to work only for
+`getOngoingTrialsByCountry`
+
+---
+
 # Commit 6: implementing the second use-case `getOngoingTrialsByCountry`
 
 This will use the already existing `getOngoingTrials` use-case and won't expose an HTTP route but a
