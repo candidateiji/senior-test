@@ -1,3 +1,19 @@
+# Commit 5: creating the `http` app
+
+I've a simple `fastify` app that will accept routes by the different modules to create a full server
+
+```typescript
+import { routes } from "@inato/modules-trials";
+
+for (const route of routes) {
+  server.withTypeProvider<ZodTypeProvider>().route(route);
+}
+```
+
+This way, creating a new route is as simple as adding it to the `routes` array of the corresponding
+module
+---
+
 # Commit 4: implementing `getOngoingTrialsBySponsor` use-case
 
 Now that I can check if a sponsor exists, I can implement the `getOngoingTrialsBySponsor` use-case
